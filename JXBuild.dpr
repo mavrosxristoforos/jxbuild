@@ -21,6 +21,8 @@ var
   MinifierPath: String;
   ExecutedCommands, FailedCommands: integer;
   TimeStart: TDateTime;
+  AHnd : THandle;
+  AChar : char;
 
 begin
   try
@@ -31,13 +33,21 @@ begin
     ExecutedCommands := 0;
     FailedCommands := 0;
     if ParamCount > 0 then begin
-      if FileExists(paramstr(1)) then begin
+      if FileExists(ParamStr(1)) then begin
         // Open File
-        WriteLn('Opening File '+paramstr(1));
+        WriteLn('Opening File '+ParamStr(1));
         WriteLn('--');
         WriteLn('');
         AssignFile(F, paramstr(1));
         Reset(F);
+        if (GetCurrentDir <> ExtractFileDir(ExpandFileName(ParamStr(1)))) then
+        begin
+          // Set Current Directory to the file's parent directory.
+          WriteLn('Setting current directory to "'+ExtractFileDir(ExpandFileName(ParamStr(1)))+'", so that paths are relative to the build file.');
+          WriteLn('--');
+          WriteLn('');
+          SetCurrentDir(ExtractFileDir(ExpandFileName(ParamStr(1))));
+        end;
         while not EOF(F) do begin
           ReadLn(F, S);
           if S = '' then continue;
@@ -225,12 +235,27 @@ begin
         WriteLn('Executed Commands: '+IntToStr(ExecutedCommands));
         WriteLn('Failed Commands: '+IntToStr(FailedCommands));
         WriteLn('Total execution time: '+IntToStr(MilliSecondsBetween(Now(), TimeStart))+'ms');
+        if (FailedCommands > 0) then begin
+          AHnd := GetStdHandle(STD_INPUT_HANDLE);
+          SetConsoleMode(AHnd,0);
+          Writeln('Press any key to exit');
+          Read(AChar);
+        end;
       end
       else
         WriteLn('Commands Text File not found');
     end
     else
-      WriteLn('Please pass the Commands Text file to parse.');
+    begin
+      WriteLn('Correct usage: jxbuild [build_file]');
+      WriteLn('Alternative usage: Double click on any .jxb file.');
+      WriteLn('--');
+      WriteLn('');
+      AHnd := GetStdHandle(STD_INPUT_HANDLE);
+      SetConsoleMode(AHnd,0);
+      Writeln('Press any key to exit');
+      Read(AChar);
+    end;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);
