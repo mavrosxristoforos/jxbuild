@@ -193,7 +193,7 @@ begin
               begin
                 WriteLn('Executing '+MinifierPath);
                 ResultCode := ShellExecute(0, 'open', PWideChar('php'),
-                  PWideChar(ExtractFileDir(ParamStr(0))+'\jxbuild-minifier.php "'+myFileArray[0]+'" "'+myFileArray[1]+'"'),
+                  PWideChar('"'+ExtractFileDir(ParamStr(0))+'\jxbuild-minifier.php" "'+myFileArray[0]+'" "'+myFileArray[1]+'"'),
                   '', SW_SHOW);
                 WriteLn('Result: '+IntToStr(ResultCode));
                 max := 10;
