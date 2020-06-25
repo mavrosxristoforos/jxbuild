@@ -23,6 +23,31 @@ var
   TimeStart: TDateTime;
   AHnd : THandle;
   AChar : char;
+  MyFindData: TWin32FindData;
+
+procedure RecursivelyAddDirectoryToZip(Zip: TZipFile; DirectoryPath: String);
+var
+  SR: TSearchRec;
+begin
+  if System.SysUtils.FindFirst(DirectoryPath + '\*', faAnyFile, SR) = 0 then
+  begin
+    repeat
+      if SR.Name = '.' then continue;
+      if SR.Name = '..' then continue;
+      WriteLn('Adding '+DirectoryPath+'\'+SR.Name);
+      FindFirstFile(PChar(DirectoryPath+'\'+SR.Name), MyFindData);
+      if MyFindData.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY then begin
+        // is directory
+        WriteLn(DirectoryPath+'\'+SR.Name+' is a directory. Parsing contents...');
+        RecursivelyAddDirectoryToZip(Zip, DirectoryPath+'\'+SR.Name);
+      end
+      else begin
+        Zip.Add(DirectoryPath+'\'+SR.Name, DirectoryPath+'\'+SR.Name);
+      end;
+    until FindNext(SR) <> 0;
+    System.SysUtils.FindClose(SR);
+  end;
+end;
 
 begin
   try
@@ -117,7 +142,15 @@ begin
             Z.Open(myFileArray[0], TZipMode.zmWrite);
             for i := 1 to Length(myFileArray) -1 do begin
               WriteLn('Adding '+myFileArray[i]);
-              Z.Add(myFileArray[i]);
+              FindFirstFile(PChar(myFileArray[i]), MyFindData);
+              if MyFindData.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY then begin
+                // is directory
+                WriteLn(myFileArray[i]+' is a directory. Parsing contents...');
+                RecursivelyAddDirectoryToZip(Z, myFileArray[i]);
+              end
+              else begin
+                Z.Add(myFileArray[i]);
+              end;
             end;
             Z.Close;
             Z.Free;
